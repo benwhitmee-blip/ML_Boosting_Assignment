@@ -1,6 +1,6 @@
 ---
 title: "Assignment2_33173176"
-author: "Willem Ashton"
+author: "Ben Whitmee"
 date: "2025-05-12"
 output: html_document
 ---
