@@ -1,0 +1,89 @@
+---
+title: "Assignment2_33173176"
+author: "Willem Ashton"
+date: "2025-05-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
+setwd("/Users/ben/Desktop/PRED. ANA/GROUP ASSIGNMENT /")
+library(readr)
+library(tibble)
+library(ggplot2)
+```
+
+```{r}
+#load the data set
+SBD <- as_tibble(read_csv("SeoulBikeData.csv", locale = locale(encoding = "CP949")))
+
+
+##Cleaning up the columns name
+library(dplyr)
+suppressPackageStartupMessages("dplyr")
+library(janitor)
+library(tidyverse)
+
+SBD<-SBD%>% 
+  clean_names()
+
+SBD<-SBD %>% 
+  rename(
+    temp=temperature_kaels,
+    dew_point_temp=dew_point_temperature_kaels,
+    solar_radiation=solar_radiation_mj_m2
+  )
+## Filter Data
+SBD <- SBD %>%
+  filter(functioning_day != "No")
+
+## Creating Dummy variables for categorical variables 
+SBD <- SBD %>%
+  mutate(winterD=ifelse(seasons=='Winter',1,0)) %>% 
+  mutate(springD=ifelse(seasons=='Spring',1,0)) %>% 
+  mutate(summerD=ifelse(seasons=='Summer',1,0))%>%
+  mutate(Holiday=ifelse(holiday == 'Holiday',1,0))
+
+#Training and test data
+#loading the first 9 months as 
+SBD_training<- SBD %>% 
+  slice(1:6528)
+
+SBD_test <- SBD %>% 
+  slice(-(1:6528))
+
+```
+
+#BOOSTING 
+```{r}
+library(gbm)
+library(forecast)
+
+SBD_training %>%
+  select( !c(1,12,13,14)) -> SBD_training
+
+SBD_test %>%
+  select( !c(1,12,13,14)) -> SBD_test
+
+set.seed(234)
+boostTreeTrain <- gbm(rented_bike_count ~ .,
+  data = SBD_training, 
+  distribution = "gaussian", 
+  n.trees = 10000, 
+  shrinkage = 0.01, 
+  interaction.depth = 5,
+  cv.folds = 10)
+
+
+predictions_val <- predict(boostTreeTrain,SBD_test)
+accuracy(predictions_val,SBD_test$rented_bike_count)
+
+gbm.perf(boostTreeTrain, method = "cv") 
+
+summary(boostTreeTrain)
+
+
+```
+
+
